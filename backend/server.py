@@ -20,9 +20,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 from pwdlib import PasswordHash
 
+from scheduling import compute_slots, get_settings, now_local, parse_dt, slot_conflict
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
+
+from admin import router as admin_router, seed_admins  # noqa: E402  (needs env loaded)
 
 # ---------- Setup ----------
 logging.basicConfig(level=logging.INFO)
@@ -257,6 +260,8 @@ async def lifespan(app: FastAPI):
     app.state.db = app.state.client[os.environ["DB_NAME"]]
     await app.state.db.users.create_index("email", unique=True)
     await seed_db(app.state.db)
+    await seed_admins(app.state.db)
+    await get_settings(app.state.db)
     try:
         init_storage()
     except Exception as e:
@@ -384,6 +389,26 @@ async def get_file(path: str, request: Request, token: Optional[str] = None):
     return Response(content=content, media_type=ctype)
 
 
+def public_file_url(request: Request, path: str) -> str:
+    base = str(request.base_url).rstrip("/")
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    if forwarded_proto and base.startswith("http://") and forwarded_proto == "https":
+        base = "https://" + base[len("http://"):]
+    return f"{base}/api/public/files/{path}"
+
+
+@api_router.get("/public/files/{path:path}")
+async def get_public_file(path: str):
+    # Only assets explicitly stored under the public prefix (e.g. professional photos)
+    if not path.startswith(f"{APP_NAME}/public/"):
+        raise HTTPException(404, "Arquivo não encontrado")
+    try:
+        content, ctype = await run_in_threadpool(get_object, path)
+    except Exception:
+        raise HTTPException(404, "Arquivo não encontrado")
+    return Response(content=content, media_type=ctype, headers={"Cache-Control": "public, max-age=86400"})
+
+
 # ---------- Services ----------
 @api_router.get("/services", response_model=List[ServiceOut])
 async def list_services(request: Request, category: Optional[str] = None, featured: Optional[bool] = None):
@@ -402,7 +427,7 @@ async def list_services(request: Request, category: Optional[str] = None, featur
 # ---------- Professionals ----------
 @api_router.get("/professionals", response_model=List[ProfessionalOut])
 async def list_professionals(request: Request):
-    cursor = request.app.state.db.professionals.find({})
+    cursor = request.app.state.db.professionals.find({"active": {"$ne": False}})
     items = []
     async for p in cursor:
         items.append(ProfessionalOut(id=p["_id"], name=p["name"], specialties=p.get("specialties", []), photo_url=p.get("photo_url")))
@@ -410,18 +435,13 @@ async def list_professionals(request: Request):
 
 
 # ---------- Availability ----------
-BUSINESS_HOURS = [f"{h:02d}:{m:02d}" for h in range(9, 19) for m in (0, 30)]  # 09:00 - 18:30
-
-
 @api_router.get("/availability")
-async def availability(request: Request, date: str, professional_id: Optional[str] = None):
-    q: dict = {"date": date, "status": {"$ne": "cancelled"}}
-    if professional_id:
-        q["professional_id"] = professional_id
-    taken = set()
-    async for a in request.app.state.db.appointments.find(q, {"time": 1, "_id": 0}):
-        taken.add(a["time"])
-    slots = [{"time": t, "available": t not in taken} for t in BUSINESS_HOURS]
+async def availability(request: Request, date: str, professional_id: Optional[str] = None, duration_min: int = 30):
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(400, "Data inválida")
+    slots = await compute_slots(request.app.state.db, date, professional_id, max(duration_min, 1))
     return {"date": date, "slots": slots}
 
 
@@ -460,18 +480,14 @@ async def create_appointment(body: AppointmentCreate, request: Request, user=Dep
             raise HTTPException(400, "Profissional inválido")
     # Validate date/time
     try:
-        appt_dt = datetime.strptime(f"{body.date} {body.time}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        appt_dt = parse_dt(body.date, body.time)
     except ValueError:
         raise HTTPException(400, "Data ou hora inválida")
-    if appt_dt < now_utc():
+    if appt_dt < now_local():
         raise HTTPException(400, "Não é possível agendar no passado")
-    # Check slot
-    slot_q = {"date": body.date, "time": body.time, "status": {"$ne": "cancelled"}}
-    if body.professional_id:
-        slot_q["professional_id"] = body.professional_id
-        exists = await db.appointments.find_one(slot_q)
-        if exists:
-            raise HTTPException(409, "Este horário já está ocupado com este profissional")
+    total_duration = sum(s["duration_min"] for s in services)
+    if await slot_conflict(db, body.date, body.time, total_duration, body.professional_id):
+        raise HTTPException(409, "Este horário já está ocupado com este profissional")
 
     doc = {
         "_id": str(uuid.uuid4()),
@@ -480,9 +496,10 @@ async def create_appointment(body: AppointmentCreate, request: Request, user=Dep
         "professional_id": body.professional_id,
         "date": body.date,
         "time": body.time,
-        "total_duration_min": sum(s["duration_min"] for s in services),
+        "total_duration_min": total_duration,
         "total_price": sum(s["price"] for s in services),
         "status": "scheduled",
+        "source": "app",
         "created_at": now_utc(),
     }
     await db.appointments.insert_one(doc)
@@ -493,17 +510,21 @@ async def create_appointment(body: AppointmentCreate, request: Request, user=Dep
 async def list_appointments(request: Request, scope: str = "all", user=Depends(current_user)):
     db = request.app.state.db
     q: dict = {"user_id": user["_id"]}
-    today = now_utc().strftime("%Y-%m-%d")
+    today = now_local().strftime("%Y-%m-%d")
     if scope == "upcoming":
         q["date"] = {"$gte": today}
         q["status"] = "scheduled"
     elif scope == "past":
-        q["$or"] = [{"date": {"$lt": today}}, {"status": {"$in": ["done", "cancelled"]}}]
+        q["$or"] = [{"date": {"$lt": today}}, {"status": {"$in": ["done", "cancelled", "no_show"]}}]
     cursor = db.appointments.find(q).sort([("date", 1), ("time", 1)])
     result = []
     async for a in cursor:
         result.append(await _hydrate_appointment(db, a))
     return result
+
+
+async def _min_notice_hours(db) -> int:
+    return int((await get_settings(db)).get("cancel_min_hours", 24))
 
 
 @api_router.post("/appointments/{appt_id}/cancel", response_model=AppointmentOut)
@@ -514,9 +535,9 @@ async def cancel_appointment(appt_id: str, request: Request, user=Depends(curren
         raise HTTPException(404, "Agendamento não encontrado")
     if a["status"] != "scheduled":
         raise HTTPException(400, "Agendamento não pode ser cancelado")
-    appt_dt = datetime.strptime(f"{a['date']} {a['time']}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-    if appt_dt - now_utc() < timedelta(hours=24):
-        raise HTTPException(400, "Cancelamento requer no mínimo 24h de antecedência")
+    min_hours = await _min_notice_hours(db)
+    if parse_dt(a["date"], a["time"]) - now_local() < timedelta(hours=min_hours):
+        raise HTTPException(400, f"Cancelamento requer no mínimo {min_hours}h de antecedência")
     await db.appointments.update_one({"_id": appt_id}, {"$set": {"status": "cancelled", "cancelled_at": now_utc()}})
     fresh = await db.appointments.find_one({"_id": appt_id})
     return await _hydrate_appointment(db, fresh)
@@ -535,29 +556,29 @@ async def reschedule_appointment(appt_id: str, body: RescheduleBody, request: Re
         raise HTTPException(404, "Agendamento não encontrado")
     if a["status"] != "scheduled":
         raise HTTPException(400, "Agendamento não pode ser remarcado")
-    appt_dt = datetime.strptime(f"{a['date']} {a['time']}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-    if appt_dt - now_utc() < timedelta(hours=24):
-        raise HTTPException(400, "Reagendamento requer no mínimo 24h de antecedência")
+    min_hours = await _min_notice_hours(db)
+    if parse_dt(a["date"], a["time"]) - now_local() < timedelta(hours=min_hours):
+        raise HTTPException(400, f"Reagendamento requer no mínimo {min_hours}h de antecedência")
     try:
-        new_dt = datetime.strptime(f"{body.date} {body.time}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        new_dt = parse_dt(body.date, body.time)
     except ValueError:
         raise HTTPException(400, "Data ou hora inválida")
-    if new_dt < now_utc():
+    if new_dt < now_local():
         raise HTTPException(400, "Não é possível remarcar para o passado")
-    if a.get("professional_id"):
-        conflict = await db.appointments.find_one({
-            "date": body.date, "time": body.time,
-            "professional_id": a["professional_id"],
-            "status": {"$ne": "cancelled"},
-            "_id": {"$ne": appt_id},
-        })
-        if conflict:
-            raise HTTPException(409, "Este horário já está ocupado")
+    if await slot_conflict(db, body.date, body.time, int(a.get("total_duration_min") or 30), a.get("professional_id"), exclude_id=appt_id):
+        raise HTTPException(409, "Este horário já está ocupado")
     await db.appointments.update_one({"_id": appt_id}, {"$set": {"date": body.date, "time": body.time}})
     fresh = await db.appointments.find_one({"_id": appt_id})
     return await _hydrate_appointment(db, fresh)
 
 
+@api_router.get("/salon-info")
+async def salon_info(request: Request):
+    s = await get_settings(request.app.state.db)
+    return {"cancel_min_hours": s["cancel_min_hours"], "opening_hours": s["opening_hours"], "days_off": s.get("days_off", [])}
+
+
+api_router.include_router(admin_router)
 app.include_router(api_router)
 
 app.add_middleware(
