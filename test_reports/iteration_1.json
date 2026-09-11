@@ -1,0 +1,34 @@
+{
+  "summary": "MVP validation for Refúgio da Beleza. Backend: 22/22 pytest passed (1 skipped for business-hours edge). Frontend: end-to-end flow works — register with LGPD toggle, home greeting + 'PROMOÇÃO DA SEMANA', catalog chips + service select + CTA, booking screen (Sem preferência, 14 date pills, 20 time slots), profile edit + toast, sign-out returns to login.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "booking.tsx", "issue": "Time pills show all 20 slots including past times for TODAY. Selecting an already-past time (e.g. 09:00 when local time is later) fires POST /api/appointments and receives 400 'Não é possível agendar no passado'; no visible toast/alert to the user — the UI stays on the booking screen silently.", "testID": "time-<HH:MM>/booking-confirm", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "global", "issue": "Non-blocking warnings: 'props.pointerEvents is deprecated', 'TouchableWithoutFeedback is deprecated', 'useNativeDriver is not supported' (web fallback)."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_refugio_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "In booking.tsx: filter out or visually disable time slots that are earlier than now for today's date (guard both UI and pre-flight before POST /appointments).",
+    "Show a user-visible error toast/alert when POST /appointments returns 400/409 so users know why booking didn't complete.",
+    "(Doc mismatch only) The problem statement referenced testIDs 'login-goto-register', 'tab-catalog', 'chip-Cabelo', 'catalog-book-cta', 'booking-confirm', 'confirmation-home', 'profile-save-button', 'profile-signout'. Actual testIDs in code are 'go-to-register', 'category-chip-<cat>', 'catalog-book-cta', 'booking-confirm', 'confirmation-home', 'profile-save-button', 'profile-signout', 'register-submit-button', 'login-submit-button'. All flows tested using actual testIDs — no code change needed."
+  ],
+  "critical_code_review_comments": [
+    "server.py availability endpoint returns all 20 slots regardless of current time; consider filtering past times for today so /appointments 400 can't happen through the UI.",
+    "server.py uses fixed timezone=UTC in appt_dt parsing; user requested US-3 timezone bug is out of scope per instructions (noted, not tested)."
+  ],
+  "updated_files": ["/app/backend/tests/test_refugio_api.py (new)"],
+  "success_rate": {"backend": "100% (22/22, 1 skipped by design)", "frontend": "~95% (all critical flows pass; 1 medium UX gap on past-time booking)"},
+  "seed_data_creation": "Each test run registers a fresh unique user (e2e_<hex>@t.com / senha123) and creates a scheduled appointment which is then cancelled during the run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend on https://beauty-booking-467.preview.emergentagent.com is fully functional. Run `pytest backend/tests/test_refugio_api.py -v` for regression. For frontend, use the ACTUAL testIDs listed in action_items[2], NOT the ones from the request. Photo upload not tested (per note). Timezone bug intentionally not tested.",
+  "rca_of_issue": "Silent booking failure: booking.tsx renders time pills from /api/availability (20 slots) without filtering by current time. When user picks a past slot on today's date, backend correctly returns 400 but the frontend swallows the error, leaving the user on the booking screen with no feedback. Fix: on same-day date, filter out slots where <HH:MM> <= current local HH:MM; also surface API error via existing toast utility."
+}

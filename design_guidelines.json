@@ -1,0 +1,176 @@
+{
+  "app_name": "Refúgio da Beleza",
+  "personality": "3 Editorial Mobile LIGHT",
+  "personality_one_liner": "An elegant, deeply welcoming editorial space that feels like flipping through a high-end wellness magazine.",
+  "color": {
+    "surface": "#FAFAF7",
+    "onSurface": "#2C2621",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#2C2621",
+    "surfaceTertiary": "#F2EBE3",
+    "onSurfaceTertiary": "#4A4139",
+    "surfaceInverse": "#2C2621",
+    "onSurfaceInverse": "#FAFAF7",
+    "brand": "#DDA7A5",
+    "onBrand": "#2C2621",
+    "brandPrimary": "#DDA7A5",
+    "onBrandPrimary": "#2C2621",
+    "brandSecondary": "#D4B483",
+    "onBrandSecondary": "#2C2621",
+    "brandTertiary": "#F4EAE9",
+    "onBrandTertiary": "#8F6564",
+    "success": "#708A74",
+    "onSuccess": "#FFFFFF",
+    "warning": "#D4B483",
+    "onWarning": "#2C2621",
+    "error": "#B56C6C",
+    "onError": "#FFFFFF",
+    "info": "#8B9A9A",
+    "onInfo": "#FFFFFF",
+    "border": "#E8E1DA",
+    "borderStrong": "#D1C7BE",
+    "divider": "#E8E1DA",
+    "muted": "#887E75"
+  },
+  "typography": {
+    "displayFontFamily": "Playfair Display",
+    "textFontFamily": "Satoshi",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous vertical breathing room. Use magazine-like spacing rhythms.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Feather",
+  "glassmorphism": {
+    "enabled": "false",
+    "do's": [
+      "Use only if absolutely necessary for floating sticky actions over busy content, but prefer solid surface/surfaceSecondary for an editorial feel."
+    ],
+    "dont's": [
+      "Do not use glass heavily, as it clashes with the Editorial/Print personality."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Auth (Cadastro/Login)",
+      "purpose": "A gentle, trusting entry into the salon experience with clear LGPD compliance.",
+      "states": {
+        "loading": "Centered minimalist spinner.",
+        "empty": "N/A",
+        "error": "Inline red text below inputs, toast for network errors."
+      },
+      "layout": "Full-width editorial layout. Large serif title 'Bem-vinda'. Inputs are flat with a simple `border` (no shadows). Sticky CTA 'Entrar' or 'Cadastrar' at the bottom of the screen."
+    },
+    {
+      "name": "Home",
+      "purpose": "Inspiration and quick access to scheduling and featured services.",
+      "states": {
+        "loading": "Skeleton cards mimicking the layout.",
+        "empty": "N/A",
+        "error": "Toast message, retry button below greeting."
+      },
+      "layout": "Personalized serif greeting at top. Hero promo banner: image with a gradient scrim and white serif overlay. Below: 'Serviços' as an elegant horizontal scroll of image cards (Hair, Nails, Depilation). Bottom: a quick 'Agendar Novamente' card if they have history."
+    },
+    {
+      "name": "Catálogo & Agendamento",
+      "purpose": "Browse the service menu beautifully and book effortlessly.",
+      "states": {
+        "loading": "Spinner in the center of the list.",
+        "empty": "Refined illustration with 'Nenhum serviço encontrado'.",
+        "error": "Retry button."
+      },
+      "layout": "Top segmented control (Cabelo / Unhas / Depilação). List of services using generous padding, serif titles, and clear price/duration metadata. Tapping 'Agendar' opens a Bottom Sheet (gorhom/bottom-sheet) to select a professional (optional), then Date/Time using a clean horizontal calendar and time pills. Sticky 'Confirmar Agendamento' CTA at the bottom."
+    },
+    {
+      "name": "Meus Agendamentos",
+      "purpose": "Clear visibility into upcoming appointments and past history.",
+      "states": {
+        "loading": "List skeletons.",
+        "empty": "Elegant line-art icon with 'Você não possui agendamentos'. Primary CTA 'Explorar Serviços'.",
+        "error": "Retry button."
+      },
+      "layout": "Top tab switch: 'Futuros' and 'Histórico'. Cards are structural, using thin `border` without shadow. Emphasize date and time in a distinct serif block. Secondary actions ('Reagendar', 'Cancelar') inside the card for upcoming items."
+    },
+    {
+      "name": "Perfil",
+      "purpose": "Manage personal details and view procedural history.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "N/A",
+        "error": "Toast message."
+      },
+      "layout": "Center avatar with a prominent serif name. List of editable fields using clean list rows. A dedicated section 'Histórico de Procedimentos' showing a chronological list of past services."
+    }
+  ],
+  "images": {
+    "hero_promo_banner": {
+      "url": "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBiZWF1dHklMjBzYWxvbiUyMGludGVyaW9yJTIwYnJpZ2h0fGVufDB8fHx8MTc4OTE1NDAxNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Luxury beauty salon interior"
+    },
+    "category_hair": {
+      "url": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGJlYXV0aWZ1bCUyMGhlYWx0aHklMjBoYWlyJTIwc29mdCUyMGxpZ2h0aW5nfGVufDB8fHx8MTc4OTE1NDAxNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Woman with beautiful healthy hair"
+    },
+    "category_skincare": {
+      "url": "https://images.unsplash.com/photo-1609535904959-aaa9d01fb5a4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxzcGElMjBza2luJTIwY2FyZSUyMHdvbWFuJTIwcmVsYXhpbmclMjBzb2Z0fGVufDB8fHx8MTc4OTE1NDAxNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Woman relaxing in spa bathrobe"
+    },
+    "category_nails": {
+      "url": "https://images.unsplash.com/photo-1667769462514-1fd738b38498?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxtYW5pY3VyZSUyMG5haWxzJTIwc29mdCUyMHBhc3RlbHxlbnwwfHx8fDE3ODkxNTQwMjN8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Pastel nail polish bottles"
+    },
+    "profile_avatar": {
+      "url": "https://images.unsplash.com/photo-1634595477722-7bc68dd410fd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwZmVtaW5pbmUlMjBwcm9maWxlJTIwcGljdHVyZSUyMHdvbWFuJTIwYXZhdGFyfGVufDB8fHx8MTc4OTE1NDAxNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Elegant feminine profile avatar"
+    }
+  },
+  "haptics": {
+    "primary_button_press": "impactLight",
+    "tab_switch": "selection",
+    "service_selection": "selection",
+    "booking_confirmation": "notificationSuccess",
+    "date_time_picker_scroll": "selection"
+  },
+  "instructions_to_main_agent": [
+    "Adhere to the '3 Editorial Mobile' personality: rely on generous whitespace, elegant serif typography (Playfair Display) for headers, and clean sans-serif (Satoshi) for body text.",
+    "Use the soft rose/blush (#DDA7A5) and gold (#D4B483) sparingly as accents against the warm off-white (#FAFAF7) background to maintain a sophisticated, non-overwhelming feminine feel.",
+    "Borders should be used instead of shadows to delineate cards and lists (shadow tier is 0).",
+    "When placing text over the hero banner or category images, ALWAYS use a gradient scrim (top to bottom, transparent to ≥70% surfaceInverse) to ensure text readability.",
+    "For the booking flow, use a bottom sheet (`@gorhom/bottom-sheet`) to keep the user in context while selecting a professional and date/time.",
+    "Ensure all interactive elements (buttons, service cards) have at least 44x44pt touch targets.",
+    "Always maintain a sticky primary CTA at the bottom of scrollable screens (e.g., 'Confirmar Agendamento' in the booking flow)."
+  ]
+}
