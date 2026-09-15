@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme, spacing, radius, fonts } from "@/src/theme";
-import { adminApi } from "./api";
-import { addDays, fromKey, todayKey, weekdayIndex, WEEKDAYS_SHORT, MONTHS } from "./date";
+import { adminApi } from "../api";
+import { addDays, fromKey, todayKey, weekdayIndex, WEEKDAYS_SHORT, MONTHS } from "../date";
 
 export function DateStrip({ value, onChange, days = 21, start }: { value: string; onChange: (k: string) => void; days?: number; start?: string }) {
   const { colors } = useTheme();

@@ -114,6 +114,15 @@ export default function Login() {
               </Pressable>
             </Link>
           </View>
+
+          <Pressable
+            testID="staff-access-link"
+            onPress={() => router.push("/admin/login")}
+            hitSlop={8}
+            style={[styles.staffLink, { borderColor: colors.border }]}
+          >
+            <Text style={{ color: colors.muted, fontSize: 12 }}>Acesso da equipe</Text>
+          </Pressable>
         </View>
       </ScrollView>
       </TouchableWithoutFeedback>
@@ -135,4 +144,5 @@ const styles = StyleSheet.create({
   cta: { borderRadius: radius.md, paddingVertical: 16, alignItems: "center" },
   ctaText: { fontSize: 16, fontWeight: "600" },
   row: { flexDirection: "row", justifyContent: "center", marginTop: spacing.xl },
+  staffLink: { alignSelf: "center", marginTop: spacing.xxl, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1 },
 });
