@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import Icon from "@react-native-vector-icons/feather";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTheme, spacing, radius, fonts } from "@/src/theme";
+import { useTheme, spacing, fonts } from "@/src/theme";
 import { useToast } from "@/src/components/toast";
 import { adminApi } from "@/src/admin/api";
 import type { Service } from "@/src/api";

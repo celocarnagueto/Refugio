@@ -4,7 +4,7 @@ import Icon from "@react-native-vector-icons/feather";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTheme, spacing, radius, fonts } from "@/src/theme";
+import { useTheme, spacing, radius } from "@/src/theme";
 import { useToast } from "@/src/components/toast";
 import { adminApi, AdminProfessional, WorkDay } from "@/src/admin/api";
 import { AdminHeader, IconBtn, Card, Sheet, Btn, Field, Label, SwitchRow, EmptyState, Avatar } from "@/src/admin/ui";

@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, TextInput } from "react-native";
 import Icon from "@react-native-vector-icons/feather";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useTheme, spacing, radius, fonts } from "@/src/theme";
+import { useTheme, spacing, radius } from "@/src/theme";
 import { useToast } from "@/src/components/toast";
 import { adminApi, Client } from "@/src/admin/api";
 import { AdminHeader, Card, Chip, Btn, Label, Field, SwitchRow, Avatar, EmptyState } from "@/src/admin/ui";
@@ -130,7 +130,7 @@ export default function NewAppointment() {
                   </Pressable>
                 ))}
                 {(clients.data || []).length === 0 && !clients.isLoading && (
-                  <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>Nenhuma cliente. Use "Avulsa / encaixe" para digitar o nome.</Text>
+                  <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>Nenhuma cliente encontrada. Use a aba Avulsa / encaixe para digitar o nome.</Text>
                 )}
               </View>
             )}
